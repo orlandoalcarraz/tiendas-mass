@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  action    String   @db.VarChar(50)
+  entity    String   @db.VarChar(50)
+  entityId  Int
+  created   DateTime @default(now())
+  details   Json?
+  User      User     @relation(fields: [userId], references: [id])
+
+}
+
+model Movement {
+  id          Int     @id @default(autoincrement())
+  created     DateTime   @default(now())
+  type        String
+  productId   Int
+  quantity    Int
+  description String
+  Product     Product @relation(fields: [productId], references: [id])
+
+}
+
+model Product {
+  id          Int        @id @default(autoincrement())
+  created     DateTime   @default(now())
+  updated     DateTime   @updatedAt
+  name        String     @db.VarChar(100)
+  description String     @db.VarChar(100)
+  category    String     @db.VarChar(100)
+  img         String     @default("PENDIENTE")
+  stock       Int
+  price       Decimal   @db.Decimal(10, 2)
+  discount    Decimal   @db.Decimal(10, 2)
+  orderLimit  Int
+  status      Boolean
+  lastStockEntry DateTime?
+  Movement    Movement[]
+  SaleItem    SaleItem[]
+  PurchaseItem PurchaseItem[]
+
+}
+
+model Provider {
+  id       Int        @id @default(autoincrement())
+  created  DateTime   @default(now())
+  updated  DateTime   @updatedAt
+  ruc      String     @unique @db.VarChar(11)
+  name     String     @db.VarChar(100)
+  legal    String     @db.VarChar(100)
+  web      String     @db.VarChar(100)
+  email    String     @db.VarChar(100)
+  number   String     @db.VarChar(9)
+  status   Boolean
+  Purchase Purchase[]
+
+}
+
+model Purchase {
+  id               Int           @id @default(autoincrement())
+  created          DateTime      @default(now())
+  userId           Int
+  providerId       Int
+  totalPrice       Decimal        @db.Decimal(10, 2)
+  receiptType      String         
+  receiptNumber    String         
+  receiptDate      DateTime       
+  User             User           @relation(fields: [userId], references: [id])
+  Provider         Provider       @relation(fields: [providerId], references: [id])
+  PurchaseItem     PurchaseItem[]
+
+}
+
+model PurchaseItem {
+  id          Int       @id @default(autoincrement())
+  purchaseId  Int
+  productId   Int
+  quantity    Int
+  price       Decimal    @db.Decimal(10, 2)
+  Product     Product    @relation(fields: [productId], references: [id])
+  Purchase    Purchase   @relation(fields: [purchaseId], references: [id])
+
+}
+
+model Sale {
+  id            Int        @id @default(autoincrement())
+  created       DateTime   @default(now())
+  transaction   String
+  userId        Int
+  totalAmount   Decimal   @db.Decimal(10, 2)
+  totalDiscount Decimal   @db.Decimal(10, 2)
+  totalPayment  Decimal @db.Decimal(10, 2)
+  paymentMethod String
+  status        String
+  User          User       @relation(fields: [userId], references: [id])
+  SaleItem      SaleItem[]
+
+}
+
+model SaleItem {
+  id        Int     @id @default(autoincrement())
+  saleId    Int
+  productId Int
+  quantity  Int
+  price     Decimal   @db.Decimal(10, 2)
+  discount  Decimal   @db.Decimal(10, 2)
+  Product   Product @relation(fields: [productId], references: [id])
+  Sale      Sale    @relation(fields: [saleId], references: [id])
+
+}
+
+model User {
+  id         Int        @id @default(autoincrement())
+  supaBaseId String?    @unique
+  created    DateTime   @default(now())
+  updated    DateTime   @updatedAt
+  dni        String     @db.VarChar(8)
+  name       String     @db.VarChar(100)
+  lastName   String     @db.VarChar(100)
+  email      String     @unique @db.VarChar(100)
+  number     String     @db.VarChar(9)
+  password   String
+  role       Int
+  status     Boolean
+  AuditLog   AuditLog[]
+  Sale       Sale[]
+  Purchase    Purchase[]
+  
+}
